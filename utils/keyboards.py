@@ -1,14 +1,26 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 
-main_menu = ReplyKeyboardMarkup(resize_keyboard=True)
-main_menu.add(KeyboardButton("📜 Ma'lumotlar"), KeyboardButton("✍️ Ariza yuborish"))
-
-info_menu = InlineKeyboardMarkup(row_width=1)
-info_menu.add(
-    InlineKeyboardButton("🏛 Rektorat", callback_data="info_rektorat"),
-    InlineKeyboardButton("📖 Dekanat", callback_data="info_dekanat"),
-    InlineKeyboardButton("📂 Bo‘limlar", callback_data="info_bolimlar"),
+# Student main menu
+main_menu = ReplyKeyboardMarkup(
+    keyboard=[
+        [KeyboardButton(text="📜 Ma'lumotlar"), KeyboardButton(text="✍️ Ariza yuborish")]
+    ],
+    resize_keyboard=True
 )
 
-admin_menu = ReplyKeyboardMarkup(resize_keyboard=True)
-admin_menu.add(KeyboardButton("📩 Arizalarni ko‘rish"), KeyboardButton("📝 Ma'lumotlarni tahrirlash"))
+# Info menu (inline buttons)
+info_menu = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [InlineKeyboardButton(text="🏛 Rektorat", callback_data="info_rektorat")],
+        [InlineKeyboardButton(text="📖 Dekanat", callback_data="info_dekanat")],
+        [InlineKeyboardButton(text="📂 Bo‘limlar", callback_data="info_bolimlar")]
+    ]
+)
+
+# Admin menu
+admin_menu = ReplyKeyboardMarkup(
+    keyboard=[
+        [KeyboardButton(text="📩 Arizalarni ko‘rish"), KeyboardButton(text="📝 Ma'lumotlarni tahrirlash")]
+    ],
+    resize_keyboard=True
+)
