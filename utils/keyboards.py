@@ -1,6 +1,5 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 
-# Student main menu
 main_menu = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text="📜 Ma'lumotlar"), KeyboardButton(text="✍️ Ariza yuborish")]
@@ -8,7 +7,6 @@ main_menu = ReplyKeyboardMarkup(
     resize_keyboard=True
 )
 
-# Info menu (inline buttons)
 info_menu = InlineKeyboardMarkup(
     inline_keyboard=[
         [InlineKeyboardButton(text="🏛 Rektorat", callback_data="info_rektorat")],
@@ -17,10 +15,18 @@ info_menu = InlineKeyboardMarkup(
     ]
 )
 
-# Admin menu
 admin_menu = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text="📩 Arizalarni ko‘rish"), KeyboardButton(text="📝 Ma'lumotlarni tahrirlash")]
+        [KeyboardButton(text="📩 Arizalarni ko‘rish"), KeyboardButton(text="📩 Arizalar arxiv")],
+        [KeyboardButton(text="📝 Ma'lumotlarni tahrirlash")]
     ],
     resize_keyboard=True
 )
+
+
+def request_reply_keyboard(request_id):
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="📝 Javob yozish", callback_data=f"reply_{request_id}")]
+        ]
+    )

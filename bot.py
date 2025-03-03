@@ -3,34 +3,36 @@ import logging
 from aiogram import Bot, Dispatcher
 from aiogram.types import BotCommand
 from config import TOKEN
-from handlers.student  import router as student_router
-from handlers.admin import  router as admin_router
+from handlers.student import router as student_router
+from handlers.admin import router as admin_router
+from database import create_tables
 
-# Enable logging
 logging.basicConfig(level=logging.INFO)
 
-# Initialize bot and dispatcher
+DB_PATH = "bot.db"
+
+create_tables()
+
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-# Register routers
 dp.include_router(student_router)
 dp.include_router(admin_router)
 
-# Set bot commands
+
 async def set_commands():
     commands = [
         BotCommand(command="start", description="Botni boshlash"),
-        BotCommand(command="admin", description="Admin panel"),
         BotCommand(command="edit_info", description="Ma'lumotni tahrirlash"),
+        BotCommand(command="delete_info", description="Ma'lumotni o'chirish"),
     ]
     await bot.set_my_commands(commands)
 
-# Main function
+
 async def main():
     await set_commands()
     await dp.start_polling(bot)
 
-# Run the bot
+
 if __name__ == "__main__":
     asyncio.run(main())
