@@ -30,3 +30,14 @@ def request_reply_keyboard(request_id):
             [InlineKeyboardButton(text="📝 Javob yozish", callback_data=f"reply_{request_id}")]
         ]
     )
+
+
+
+info_management_menu = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [InlineKeyboardButton(text="➕ Qo‘shish", callback_data="admin_info_add"),
+         InlineKeyboardButton(text="✏️ Tahrirlash", callback_data="admin_info_edit")],
+        [InlineKeyboardButton(text="❌ O‘chirish", callback_data="admin_info_delete"),
+         InlineKeyboardButton(text="📜 Ko‘rish", callback_data="admin_info_view")]
+    ]
+)

@@ -123,3 +123,13 @@ def delete_info(section):
     cursor.execute("DELETE FROM info WHERE section=?", (section,))
     conn.commit()
     conn.close()
+
+
+# NEW: Function to retrieve all info entries
+def get_all_info():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT section, content FROM info")
+    data = cursor.fetchall()
+    conn.close()
+    return data
