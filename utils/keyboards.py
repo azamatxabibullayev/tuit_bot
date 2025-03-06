@@ -7,14 +7,6 @@ main_menu = ReplyKeyboardMarkup(
     resize_keyboard=True
 )
 
-info_menu = InlineKeyboardMarkup(
-    inline_keyboard=[
-        [InlineKeyboardButton(text="🏛 Rektorat", callback_data="info_rektorat")],
-        [InlineKeyboardButton(text="📖 Dekanat", callback_data="info_dekanat")],
-        [InlineKeyboardButton(text="📂 Bo‘limlar", callback_data="info_bolimlar")]
-    ]
-)
-
 admin_menu = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text="📩 Arizalarni ko‘rish"), KeyboardButton(text="📩 Arizalar arxiv")],
@@ -32,6 +24,13 @@ def request_reply_keyboard(request_id):
     )
 
 
+def archived_request_keyboard(request_id):
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="❌ O'chirish", callback_data=f"delete_{request_id}")]
+        ]
+    )
+
 
 info_management_menu = InlineKeyboardMarkup(
     inline_keyboard=[
@@ -41,3 +40,10 @@ info_management_menu = InlineKeyboardMarkup(
          InlineKeyboardButton(text="📜 Ko‘rish", callback_data="admin_info_view")]
     ]
 )
+
+
+def build_info_keyboard(infos):
+    keyboard = InlineKeyboardMarkup(row_width=1)
+    for section, content in infos:
+        keyboard.add(InlineKeyboardButton(text=section.capitalize(), url=content))
+    return keyboard

@@ -96,6 +96,14 @@ def get_request(request_id):
     return data
 
 
+def delete_request(request_id):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM students WHERE id=?", (request_id,))
+    conn.commit()
+    conn.close()
+
+
 def get_info(section):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
@@ -125,7 +133,6 @@ def delete_info(section):
     conn.close()
 
 
-# NEW: Function to retrieve all info entries
 def get_all_info():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()

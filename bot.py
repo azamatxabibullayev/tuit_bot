@@ -9,8 +9,6 @@ from database import create_tables
 
 logging.basicConfig(level=logging.INFO)
 
-DB_PATH = "bot.db"
-
 create_tables()
 
 bot = Bot(token=TOKEN)

@@ -1,11 +1,11 @@
 from aiogram import Router, types, F
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from config import ADMIN_IDS
-from database import get_info, add_request
-from utils.keyboards import main_menu, info_menu, admin_menu
+from database import add_request, get_all_info
+from utils.keyboards import main_menu, admin_menu
 
 router = Router()
 
@@ -27,14 +27,14 @@ async def start_command(message: Message):
 
 @router.message(F.text == "📜 Ma'lumotlar")
 async def info_menu_handler(message: Message):
-    await message.answer("Kerakli bo‘limni tanlang:", reply_markup=info_menu)
-
-
-@router.callback_query(F.data.startswith("info_"))
-async def send_info(callback_query: CallbackQuery):
-    section = callback_query.data.replace("info_", "")
-    content = get_info(section)
-    await callback_query.message.answer(f"📜 {section.capitalize()} bo‘limi:\n\n{content}")
+    infos = get_all_info()
+    if not infos:
+        await message.answer("Ma'lumotlar mavjud emas.")
+        return
+    keyboard = InlineKeyboardMarkup(row_width=1)
+    for section, content in infos:
+        keyboard.add(InlineKeyboardButton(text=section.capitalize(), url=content))
+    await message.answer("Kerakli bo‘limni tanlang:", reply_markup=keyboard)
 
 
 @router.message(F.text == "✍️ Ariza yuborish")

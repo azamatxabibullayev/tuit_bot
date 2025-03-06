@@ -5,8 +5,8 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import CallbackQuery
 from config import ADMIN_IDS
 from database import (get_requests, get_archived_requests, update_request_status,
-                      update_info, get_info, delete_info, get_request, get_all_info)
-from utils.keyboards import admin_menu, request_reply_keyboard, info_management_menu
+                      update_info, get_info, delete_info, get_request, get_all_info, delete_request)
+from utils.keyboards import admin_menu, request_reply_keyboard, info_management_menu, archived_request_keyboard
 
 router = Router()
 
@@ -56,7 +56,8 @@ async def view_archived_requests(message: types.Message):
                     f"👤 Ism: {req[2]}\n"
                     f"📚 Guruh: {req[3]}\n"
                     f"📝 Ariza: {req[5]}\n"
-                    f"✅ Javob: {req[7]}"
+                    f"✅ Javob: {req[7]}",
+                    reply_markup=archived_request_keyboard(req[0])
                 )
     else:
         await message.answer("Sizga ruxsat berilmagan.")
@@ -110,6 +111,23 @@ async def process_admin_reply(message: types.Message, state: FSMContext):
     await state.finish()
 
 
+@router.callback_query(F.data.startswith("delete_"))
+async def delete_archived_request(callback: CallbackQuery):
+    if is_admin(callback.from_user.id):
+        request_id = int(callback.data.split("_")[1])
+        try:
+            delete_request(request_id)
+        except Exception as e:
+            await callback.message.answer("Xatolik yuz berdi. Iltimos, qaytadan urinib ko‘ring.")
+            await callback.answer()
+            return
+        await callback.message.answer("Ariza muvaffaqiyatli o'chirildi!")
+        await callback.answer()
+    else:
+        await callback.message.answer("Sizga ruxsat berilmagan.")
+        await callback.answer()
+
+
 @router.message(F.text == "📝 Ma'lumotlarni tahrirlash")
 async def manage_info(message: types.Message):
     if is_admin(message.from_user.id):
@@ -118,7 +136,6 @@ async def manage_info(message: types.Message):
         await message.answer("Sizga ruxsat berilmagan.")
 
 
-# Define FSM groups for info actions
 class InfoAdd(StatesGroup):
     waiting_for_section = State()
     waiting_for_content = State()
@@ -142,7 +159,7 @@ async def info_add(callback: CallbackQuery, state: FSMContext):
 @router.message(InfoAdd.waiting_for_section)
 async def info_add_section(message: types.Message, state: FSMContext):
     await state.update_data(section=message.text.strip())
-    await message.answer("Ushbu bo‘lim uchun ma'lumotni kiriting:")
+    await message.answer("Ushbu bo‘lim uchun URL manzilini kiriting:")
     await state.set_state(InfoAdd.waiting_for_content)
 
 
