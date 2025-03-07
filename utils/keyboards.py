@@ -2,15 +2,23 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMar
 
 main_menu = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text="📜 Ma'lumotlar"), KeyboardButton(text="✍️ Ariza yuborish")]
+        [
+            KeyboardButton(text="📜 Ma'lumotlar"),
+            KeyboardButton(text="✍️ Ariza yuborish")
+        ]
     ],
     resize_keyboard=True
 )
 
 admin_menu = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text="📩 Arizalarni ko‘rish"), KeyboardButton(text="📩 Arizalar arxiv")],
-        [KeyboardButton(text="📝 Ma'lumotlarni tahrirlash")]
+        [
+            KeyboardButton(text="📩 Arizalarni ko‘rish"),
+            KeyboardButton(text="📩 Arizalar arxiv")
+        ],
+        [
+            KeyboardButton(text="📝 Ma'lumotlarni tahrirlash")
+        ]
     ],
     resize_keyboard=True
 )
@@ -34,16 +42,13 @@ def archived_request_keyboard(request_id):
 
 info_management_menu = InlineKeyboardMarkup(
     inline_keyboard=[
-        [InlineKeyboardButton(text="➕ Qo‘shish", callback_data="admin_info_add"),
-         InlineKeyboardButton(text="✏️ Tahrirlash", callback_data="admin_info_edit")],
-        [InlineKeyboardButton(text="❌ O‘chirish", callback_data="admin_info_delete"),
-         InlineKeyboardButton(text="📜 Ko‘rish", callback_data="admin_info_view")]
+        [
+            InlineKeyboardButton(text="➕ Qo‘shish", callback_data="admin_info_add"),
+            InlineKeyboardButton(text="✏️ Tahrirlash", callback_data="admin_info_edit")
+        ],
+        [
+            InlineKeyboardButton(text="❌ O‘chirish", callback_data="admin_info_delete"),
+            InlineKeyboardButton(text="📜 Ko‘rish", callback_data="admin_info_view")
+        ]
     ]
 )
-
-
-def build_info_keyboard(infos):
-    keyboard = InlineKeyboardMarkup(row_width=1)
-    for section, content in infos:
-        keyboard.add(InlineKeyboardButton(text=section.capitalize(), url=content))
-    return keyboard

@@ -4,9 +4,15 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import CallbackQuery
 from config import ADMIN_IDS
-from database import (get_requests, get_archived_requests, update_request_status,
-                      update_info, get_info, delete_info, get_request, get_all_info, delete_request)
-from utils.keyboards import admin_menu, request_reply_keyboard, info_management_menu, archived_request_keyboard
+from database import (
+    get_requests, get_archived_requests, update_request_status,
+    get_request, delete_request,
+    add_info_item, get_all_info_items, get_info_item, update_info_item, delete_info_item
+)
+from utils.keyboards import (
+    admin_menu, request_reply_keyboard, archived_request_keyboard,
+    info_management_menu
+)
 
 router = Router()
 
@@ -92,7 +98,7 @@ async def process_admin_reply(message: types.Message, state: FSMContext):
 
     try:
         update_request_status(request_id, "answered", admin_reply=reply_text)
-    except Exception as e:
+    except Exception:
         await message.answer("Xatolik yuz berdi, iltimos qaytadan urinib ko‘ring.")
         return
 
@@ -101,7 +107,7 @@ async def process_admin_reply(message: types.Message, state: FSMContext):
         user_id = req[1]
         try:
             await message.bot.send_message(user_id, f"Sizning arizangizga javob:\n\n{reply_text}")
-        except Exception as e:
+        except Exception:
             await message.answer(
                 "Foydalanuvchiga javob yuborishda xatolik yuz berdi. Iltimos, foydalanuvchi botni ishga tushirganga ishonch hosil qiling.")
     else:
@@ -117,7 +123,7 @@ async def delete_archived_request(callback: CallbackQuery):
         request_id = int(callback.data.split("_")[1])
         try:
             delete_request(request_id)
-        except Exception as e:
+        except Exception:
             await callback.message.answer("Xatolik yuz berdi. Iltimos, qaytadan urinib ko‘ring.")
             await callback.answer()
             return
@@ -137,81 +143,177 @@ async def manage_info(message: types.Message):
 
 
 class InfoAdd(StatesGroup):
-    waiting_for_section = State()
-    waiting_for_content = State()
-
-
-class InfoDelete(StatesGroup):
-    waiting_for_section = State()
+    waiting_for_title = State()
+    waiting_for_link = State()
+    waiting_for_parent_id = State()
 
 
 @router.callback_query(F.data == "admin_info_add")
 async def info_add(callback: CallbackQuery, state: FSMContext):
     if is_admin(callback.from_user.id):
-        await callback.message.answer("Qo‘shmoqchi bo‘lgan bo‘lim nomini kiriting:")
-        await state.set_state(InfoAdd.waiting_for_section)
+        await callback.message.answer("Yangi bo'lim nomini kiriting:")
+        await state.set_state(InfoAdd.waiting_for_title)
         await callback.answer()
     else:
         await callback.message.answer("Sizga ruxsat berilmagan.")
         await callback.answer()
 
 
-@router.message(InfoAdd.waiting_for_section)
-async def info_add_section(message: types.Message, state: FSMContext):
-    await state.update_data(section=message.text.strip())
-    await message.answer("Ushbu bo‘lim uchun URL manzilini kiriting:")
-    await state.set_state(InfoAdd.waiting_for_content)
+@router.message(InfoAdd.waiting_for_title)
+async def info_add_title(message: types.Message, state: FSMContext):
+    await state.update_data(title=message.text.strip())
+    await message.answer(
+        "Agar bu bo'limga link (URL) biriktirmoqchi bo'lsangiz kiriting. Agar link bo'lmasa 'yoq' deb yozing:")
+    await state.set_state(InfoAdd.waiting_for_link)
 
 
-@router.message(InfoAdd.waiting_for_content)
-async def info_add_content(message: types.Message, state: FSMContext):
+@router.message(InfoAdd.waiting_for_link)
+async def info_add_link(message: types.Message, state: FSMContext):
+    link = message.text.strip()
+    if link.lower() == "yoq":
+        link = None
+    await state.update_data(link=link)
+    await message.answer("Agar bu bo'limning ota bo'limi bo'lsa, ota bo'lim ID sini kiriting. Bo'lmasa '0' deb yozing:")
+    await state.set_state(InfoAdd.waiting_for_parent_id)
+
+
+@router.message(InfoAdd.waiting_for_parent_id)
+async def info_add_parent_id(message: types.Message, state: FSMContext):
+    parent_id_str = message.text.strip()
+    try:
+        parent_id = int(parent_id_str)
+    except ValueError:
+        await message.answer("Noto'g'ri ID kiritildi, qayta kiriting yoki '0' deb yozing:")
+        return
+
+    if parent_id == 0:
+        parent_id = None
+
     data = await state.get_data()
-    section = data.get("section")
-    content = message.text.strip()
-    update_info(section, content)
-    await message.answer(f"📜 {section.capitalize()} bo‘limi qo‘shildi yoki tahrirlandi!")
-    await state.finish()
+    title = data["title"]
+    link = data["link"]
+
+    add_info_item(title, link, parent_id)
+    await message.answer(f"✅ Yangi bo'lim qo'shildi: {title}")
+    await state.clear()
+
+
+class InfoEdit(StatesGroup):
+    waiting_for_item_id = State()
+    waiting_for_new_title = State()
+    waiting_for_new_link = State()
 
 
 @router.callback_query(F.data == "admin_info_edit")
 async def info_edit(callback: CallbackQuery, state: FSMContext):
     if is_admin(callback.from_user.id):
-        await callback.message.answer("Tahrirlash uchun bo‘lim nomini kiriting:")
-        await state.set_state(InfoAdd.waiting_for_section)
+        all_items = get_all_info_items()
+        if not all_items:
+            await callback.message.answer("Hech qanday bo'lim mavjud emas.")
+            await callback.answer()
+            return
+        text = "Tahrirlash uchun ID ni tanlang:\n"
+        for item in all_items:
+            text += f"ID: {item[0]} | Title: {item[2]} | Link: {item[3]}\n"
+        await callback.message.answer(text)
+        await callback.message.answer("Tahrir qilmoqchi bo'lgan bo'limning ID sini kiriting:")
+        await state.set_state(InfoEdit.waiting_for_item_id)
         await callback.answer()
     else:
         await callback.message.answer("Sizga ruxsat berilmagan.")
         await callback.answer()
+
+
+@router.message(InfoEdit.waiting_for_item_id)
+async def info_edit_item_id(message: types.Message, state: FSMContext):
+    try:
+        item_id = int(message.text.strip())
+    except ValueError:
+        await message.answer("Noto'g'ri ID. Qayta kiriting:")
+        return
+    item = get_info_item(item_id)
+    if not item:
+        await message.answer("Bunday ID mavjud emas. Qayta kiriting:")
+        return
+    await state.update_data(item_id=item_id)
+    await message.answer("Yangi nomni kiriting (o'zgartirmoqchi bo'lmasangiz 'yoq' deb yozing):")
+    await state.set_state(InfoEdit.waiting_for_new_title)
+
+
+@router.message(InfoEdit.waiting_for_new_title)
+async def info_edit_new_title(message: types.Message, state: FSMContext):
+    new_title = message.text.strip()
+    if new_title.lower() == "yoq":
+        new_title = None
+    await state.update_data(new_title=new_title)
+    await message.answer("Yangi linkni kiriting (o'zgartirmoqchi bo'lmasangiz 'yoq' deb yozing):")
+    await state.set_state(InfoEdit.waiting_for_new_link)
+
+
+@router.message(InfoEdit.waiting_for_new_link)
+async def info_edit_new_link(message: types.Message, state: FSMContext):
+    new_link = message.text.strip()
+    if new_link.lower() == "yoq":
+        new_link = None
+    data = await state.get_data()
+    item_id = data["item_id"]
+    new_title = data["new_title"]
+    update_info_item(item_id, new_title, new_link)
+    await message.answer("✅ Ma'lumot muvaffaqiyatli tahrirlandi.")
+    await state.clear()
+
+
+class InfoDelete(StatesGroup):
+    waiting_for_item_id = State()
 
 
 @router.callback_query(F.data == "admin_info_delete")
 async def info_delete(callback: CallbackQuery, state: FSMContext):
     if is_admin(callback.from_user.id):
-        await callback.message.answer("O‘chirmoqchi bo‘lgan bo‘lim nomini kiriting:")
-        await state.set_state(InfoDelete.waiting_for_section)
+        all_items = get_all_info_items()
+        if not all_items:
+            await callback.message.answer("Hech qanday bo'lim mavjud emas.")
+            await callback.answer()
+            return
+        text = "O'chirish uchun ID ni tanlang:\n"
+        for item in all_items:
+            text += f"ID: {item[0]} | Title: {item[2]} | Link: {item[3]}\n"
+        await callback.message.answer(text)
+        await callback.message.answer("O'chirmoqchi bo'lgan bo'limning ID sini kiriting:")
+        await state.set_state(InfoDelete.waiting_for_item_id)
         await callback.answer()
     else:
         await callback.message.answer("Sizga ruxsat berilmagan.")
         await callback.answer()
 
 
-@router.message(InfoDelete.waiting_for_section)
-async def info_delete_section(message: types.Message, state: FSMContext):
-    section = message.text.strip()
-    delete_info(section)
-    await message.answer(f"📜 {section.capitalize()} bo‘limi o‘chirildi!")
-    await state.finish()
+@router.message(InfoDelete.waiting_for_item_id)
+async def info_delete_item_id(message: types.Message, state: FSMContext):
+    try:
+        item_id = int(message.text.strip())
+    except ValueError:
+        await message.answer("Noto'g'ri ID. Qayta kiriting:")
+        return
+    item = get_info_item(item_id)
+    if not item:
+        await message.answer("Bunday ID mavjud emas. Qayta kiriting:")
+        return
+    delete_info_item(item_id)
+    await message.answer("✅ Bo'lim o'chirildi.")
+    await state.clear()
 
 
 @router.callback_query(F.data == "admin_info_view")
 async def info_view_admin(callback: CallbackQuery):
     if is_admin(callback.from_user.id):
-        all_info = get_all_info()
-        if not all_info:
+        all_items = get_all_info_items()
+        if not all_items:
             await callback.message.answer("Ma'lumotlar mavjud emas.")
         else:
-            for section, content in all_info:
-                await callback.message.answer(f"📜 {section.capitalize()}:\n\n{content}")
+            text = "Hozirgi bo'limlar:\n"
+            for item in all_items:
+                text += f"ID: {item[0]}, Parent: {item[1]}, Title: {item[2]}, Link: {item[3]}\n"
+            await callback.message.answer(text)
         await callback.answer()
     else:
         await callback.message.answer("Sizga ruxsat berilmagan.")

@@ -4,7 +4,7 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from config import ADMIN_IDS
-from database import add_request, get_all_info
+from database import add_request, get_child_items, get_info_item
 from utils.keyboards import main_menu, admin_menu
 
 router = Router()
@@ -27,14 +27,53 @@ async def start_command(message: Message):
 
 @router.message(F.text == "📜 Ma'lumotlar")
 async def info_menu_handler(message: Message):
-    infos = get_all_info()
-    if not infos:
-        await message.answer("Ma'lumotlar mavjud emas.")
+    await show_info_items(message)
+
+
+async def show_info_items(message_or_callback, parent_id=None):
+    items = get_child_items(parent_id)
+    if not items:
+        if parent_id is not None:
+            item = get_info_item(parent_id)
+            if item and item[3]:
+                kb = InlineKeyboardMarkup(
+                    inline_keyboard=[
+                        [InlineKeyboardButton(text="Open link", url=item[3])]
+                    ]
+                )
+                if isinstance(message_or_callback, Message):
+                    await message_or_callback.answer("Bu bo'limda havola mavjud:", reply_markup=kb)
+                else:
+                    await message_or_callback.message.answer("Bu bo'limda havola mavjud:", reply_markup=kb)
+            else:
+                if isinstance(message_or_callback, Message):
+                    await message_or_callback.answer("Bu bo'limda qo'shimcha ma'lumot yo'q.")
+                else:
+                    await message_or_callback.message.answer("Bu bo'limda qo'shimcha ma'lumot yo'q.")
+        else:
+            if isinstance(message_or_callback, Message):
+                await message_or_callback.answer("Hozircha ma'lumotlar mavjud emas.")
+            else:
+                await message_or_callback.message.answer("Hozircha ma'lumotlar mavjud emas.")
         return
-    keyboard = InlineKeyboardMarkup(row_width=1)
-    for section, content in infos:
-        keyboard.add(InlineKeyboardButton(text=section.capitalize(), url=content))
-    await message.answer("Kerakli bo‘limni tanlang:", reply_markup=keyboard)
+
+    inline_btns = []
+    for (id_, title, link) in items:
+        callback_data = f"info_{id_}"
+        inline_btns.append([InlineKeyboardButton(text=title, callback_data=callback_data)])
+    kb = InlineKeyboardMarkup(inline_keyboard=inline_btns)
+
+    if isinstance(message_or_callback, Message):
+        await message_or_callback.answer("Kerakli bo‘limni tanlang:", reply_markup=kb)
+    else:
+        await message_or_callback.message.answer("Kerakli bo‘limni tanlang:", reply_markup=kb)
+
+
+@router.callback_query(F.data.startswith("info_"))
+async def info_callback_handler(callback: types.CallbackQuery):
+    item_id = int(callback.data.split("_")[1])
+    await show_info_items(callback, parent_id=item_id)
+    await callback.answer()
 
 
 @router.message(F.text == "✍️ Ariza yuborish")
@@ -70,6 +109,12 @@ async def phone_number_step(message: Message, state: FSMContext):
 @router.message(StudentForm.request_text)
 async def request_text_step(message: Message, state: FSMContext):
     data = await state.get_data()
-    add_request(message.from_user.id, data["full_name"], data["group_number"], data["phone_number"], message.text)
+    add_request(
+        message.from_user.id,
+        data["full_name"],
+        data["group_number"],
+        data["phone_number"],
+        message.text
+    )
     await message.answer("✅ Arizangiz yuborildi!", reply_markup=main_menu)
     await state.clear()

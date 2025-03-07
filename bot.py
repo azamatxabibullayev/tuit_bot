@@ -20,7 +20,7 @@ dp.include_router(admin_router)
 
 async def set_commands():
     commands = [
-        BotCommand(command="start", description="Botni boshlash"),
+        BotCommand(command="start", description="Botni boshlash")
     ]
     await bot.set_my_commands(commands)
 
