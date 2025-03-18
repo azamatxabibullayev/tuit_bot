@@ -38,7 +38,11 @@ async def set_language_callback(callback: types.CallbackQuery, state: FSMContext
     if lang_code not in ["uz", "ru"]:
         lang_code = "uz"
     set_language(callback.from_user.id, lang_code)
-    await callback.message.answer(LANG[lang_code]["start_message"], reply_markup=keyboards.get_main_menu(lang_code))
+    # Agar admin bo'lsa, admin panel, aks holda student panel ochilsin.
+    if callback.from_user.id in ADMIN_IDS:
+        await callback.message.answer(LANG[lang_code]["admin_welcome"], reply_markup=keyboards.get_admin_menu(lang_code))
+    else:
+        await callback.message.answer(LANG[lang_code]["start_message"], reply_markup=keyboards.get_main_menu(lang_code))
     await callback.answer()
 
 

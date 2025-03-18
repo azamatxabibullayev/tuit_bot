@@ -29,7 +29,7 @@ async def admin_start(message: types.Message):
         await message.answer(LANG[lang]["no_permission"])
 
 
-@router.message(F.text == LANG["uz"]["admin_menu"]["view_requests"])
+@router.message(F.text.in_([LANG["uz"]["admin_menu"]["view_requests"], LANG["ru"]["admin_menu"]["view_requests"]]))
 async def view_requests(message: types.Message):
     lang = get_language(message.from_user.id) or "uz"
     if is_admin(message.from_user.id):
@@ -50,7 +50,8 @@ async def view_requests(message: types.Message):
         await message.answer(LANG[lang]["no_permission"])
 
 
-@router.message(F.text == LANG["uz"]["admin_menu"]["archived_requests"])
+@router.message(
+    F.text.in_([LANG["uz"]["admin_menu"]["archived_requests"], LANG["ru"]["admin_menu"]["archived_requests"]]))
 async def view_archived_requests(message: types.Message):
     lang = get_language(message.from_user.id) or "uz"
     if is_admin(message.from_user.id):
@@ -119,7 +120,7 @@ async def process_admin_reply(message: types.Message, state: FSMContext):
         await message.answer("Ariza topilmadi." if lang == "uz" else "Заявка не найдена.")
 
     await message.answer(LANG[lang]["request_answered"])
-    await state.finish()
+    await state.clear()
 
 
 @router.callback_query(F.data.startswith("delete_"))
@@ -140,7 +141,7 @@ async def delete_archived_request(callback: CallbackQuery):
         await callback.answer()
 
 
-@router.message(F.text == "📝 Ma'lumotlarni tahrirlash")
+@router.message(F.text.in_([LANG["uz"]["admin_menu"]["edit_info"], LANG["ru"]["admin_menu"]["edit_info"]]))
 async def manage_info(message: types.Message):
     lang = get_language(message.from_user.id) or "uz"
     if is_admin(message.from_user.id):
