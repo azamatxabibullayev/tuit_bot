@@ -38,9 +38,9 @@ async def set_language_callback(callback: types.CallbackQuery, state: FSMContext
     if lang_code not in ["uz", "ru"]:
         lang_code = "uz"
     set_language(callback.from_user.id, lang_code)
-    # Agar admin bo'lsa, admin panel, aks holda student panel ochilsin.
     if callback.from_user.id in ADMIN_IDS:
-        await callback.message.answer(LANG[lang_code]["admin_welcome"], reply_markup=keyboards.get_admin_menu(lang_code))
+        await callback.message.answer(LANG[lang_code]["admin_welcome"],
+                                      reply_markup=keyboards.get_admin_menu(lang_code))
     else:
         await callback.message.answer(LANG[lang_code]["start_message"], reply_markup=keyboards.get_main_menu(lang_code))
     await callback.answer()
@@ -57,50 +57,44 @@ async def show_info_items(message_or_callback, lang: str, parent_id=None):
     if not items:
         if parent_id is not None:
             item = get_info_item(parent_id)
-            if item and item[3]:
+            if item and item[4]:
                 kb = InlineKeyboardMarkup(
                     inline_keyboard=[
-                        [InlineKeyboardButton(text=LANG[lang]["open_link"], url=item[3])]
+                        [InlineKeyboardButton(text=LANG[lang]["open_link"], url=item[4])]
                     ]
                 )
+                text = "Bu bo'limda havola mavjud:" if lang == "uz" else "В этом разделе есть ссылка:"
                 if isinstance(message_or_callback, Message):
-                    await message_or_callback.answer(
-                        "Bu bo'limda havola mavjud:" if lang == "uz" else "В этом разделе есть ссылка:",
-                        reply_markup=kb)
+                    await message_or_callback.answer(text, reply_markup=kb)
                 else:
-                    await message_or_callback.message.answer(
-                        "Bu bo'limda havola mavjud:" if lang == "uz" else "В этом разделе есть ссылка:",
-                        reply_markup=kb)
+                    await message_or_callback.message.answer(text, reply_markup=kb)
             else:
+                text = "Bu bo'limda qo'shimcha ma'lumot yo'q." if lang == "uz" else "В этом разделе нет дополнительной информации."
                 if isinstance(message_or_callback, Message):
-                    await message_or_callback.answer(
-                        "Bu bo'limda qo'shimcha ma'lumot yo'q." if lang == "uz" else "В этом разделе нет дополнительной информации.")
+                    await message_or_callback.answer(text)
                 else:
-                    await message_or_callback.message.answer(
-                        "Bu bo'limda qo'shimcha ma'lumot yo'q." if lang == "uz" else "В этом разделе нет дополнительной информации.")
+                    await message_or_callback.message.answer(text)
         else:
+            text = "Hozircha ma'lumotlar mavjud emas." if lang == "uz" else "Данных пока нет."
             if isinstance(message_or_callback, Message):
-                await message_or_callback.answer(
-                    "Hozircha ma'lumotlar mavjud emas." if lang == "uz" else "Данных пока нет.")
+                await message_or_callback.answer(text)
             else:
-                await message_or_callback.message.answer(
-                    "Hozircha ma'lumotlar mavjud emas." if lang == "uz" else "Данных пока нет.")
+                await message_or_callback.message.answer(text)
         return
 
     inline_btns = []
-    for (id_, title, link) in items:
+    for (id_, title_uz, title_ru, link) in items:
+        title = title_uz if lang == "uz" else title_ru
         if link:
             inline_btns.append([InlineKeyboardButton(text=title, url=link)])
         else:
             inline_btns.append([InlineKeyboardButton(text=title, callback_data=f"info_{id_}")])
     kb = InlineKeyboardMarkup(inline_keyboard=inline_btns)
-
+    text = "Kerakli bo‘limni tanlang:" if lang == "uz" else "Выберите раздел:"
     if isinstance(message_or_callback, Message):
-        await message_or_callback.answer("Kerakli bo‘limni tanlang:" if lang == "uz" else "Выберите раздел:",
-                                         reply_markup=kb)
+        await message_or_callback.answer(text, reply_markup=kb)
     else:
-        await message_or_callback.message.answer("Kerakli bo‘limni tanlang:" if lang == "uz" else "Выберите раздел:",
-                                                 reply_markup=kb)
+        await message_or_callback.message.answer(text, reply_markup=kb)
 
 
 @router.callback_query(F.data.startswith("info_"))

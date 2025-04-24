@@ -24,7 +24,8 @@ def create_tables():
         CREATE TABLE IF NOT EXISTS info_items (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             parent_id INTEGER,
-            title TEXT NOT NULL,
+            title_uz TEXT NOT NULL,
+            title_ru TEXT NOT NULL,
             link TEXT,
             FOREIGN KEY (parent_id) REFERENCES info_items(id)
         )
@@ -111,13 +112,13 @@ def delete_request(request_id):
     conn.close()
 
 
-def add_info_item(title, link=None, parent_id=None):
+def add_info_item(title_uz, title_ru, link=None, parent_id=None):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute('''
-        INSERT INTO info_items (title, link, parent_id)
-        VALUES (?, ?, ?)
-    ''', (title, link, parent_id))
+        INSERT INTO info_items (title_uz, title_ru, link, parent_id)
+        VALUES (?, ?, ?, ?)
+    ''', (title_uz, title_ru, link, parent_id))
     conn.commit()
     conn.close()
 
@@ -126,7 +127,7 @@ def get_info_item(item_id):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT id, parent_id, title, link
+        SELECT id, parent_id, title_uz, title_ru, link
         FROM info_items
         WHERE id=?
     """, (item_id,))
@@ -140,13 +141,13 @@ def get_child_items(parent_id=None):
     cursor = conn.cursor()
     if parent_id is None:
         cursor.execute("""
-            SELECT id, title, link
+            SELECT id, title_uz, title_ru, link
             FROM info_items
             WHERE parent_id IS NULL
         """)
     else:
         cursor.execute("""
-            SELECT id, title, link
+            SELECT id, title_uz, title_ru, link
             FROM info_items
             WHERE parent_id=?
         """, (parent_id,))
@@ -155,28 +156,24 @@ def get_child_items(parent_id=None):
     return data
 
 
-def update_info_item(item_id, new_title=None, new_link=None):
+def update_info_item(item_id, new_title_uz=None, new_title_ru=None, new_link=None):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-
-    if new_title is not None and new_link is not None:
-        cursor.execute("""
-            UPDATE info_items
-            SET title=?, link=?
-            WHERE id=?
-        """, (new_title, new_link, item_id))
-    elif new_title is not None:
-        cursor.execute("""
-            UPDATE info_items
-            SET title=?
-            WHERE id=?
-        """, (new_title, item_id))
-    elif new_link is not None:
-        cursor.execute("""
-            UPDATE info_items
-            SET link=?
-            WHERE id=?
-        """, (new_link, item_id))
+    fields = []
+    params = []
+    if new_title_uz is not None:
+        fields.append("title_uz = ?")
+        params.append(new_title_uz)
+    if new_title_ru is not None:
+        fields.append("title_ru = ?")
+        params.append(new_title_ru)
+    if new_link is not None:
+        fields.append("link = ?")
+        params.append(new_link)
+    if fields:
+        query = "UPDATE info_items SET " + ", ".join(fields) + " WHERE id = ?"
+        params.append(item_id)
+        cursor.execute(query, tuple(params))
     conn.commit()
     conn.close()
 
@@ -193,7 +190,7 @@ def get_all_info_items():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT id, parent_id, title, link
+        SELECT id, parent_id, title_uz, title_ru, link
         FROM info_items
     """)
     data = cursor.fetchall()

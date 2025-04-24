@@ -152,7 +152,8 @@ async def manage_info(message: types.Message):
 
 
 class InfoAdd(StatesGroup):
-    waiting_for_title = State()
+    waiting_for_title_uz = State()
+    waiting_for_title_ru = State()
     waiting_for_link = State()
     waiting_for_parent_id = State()
 
@@ -162,20 +163,30 @@ async def info_add(callback: CallbackQuery, state: FSMContext):
     lang = get_language(callback.from_user.id) or "uz"
     if is_admin(callback.from_user.id):
         await callback.message.answer(
-            "Yangi bo'lim nomini kiriting:" if lang == "uz" else "Введите название нового раздела:")
-        await state.set_state(InfoAdd.waiting_for_title)
+            "Yangi bo'lim nomini kiriting (O'zbekcha):" if lang == "uz" else "Введите название раздела (на узбекском):")
+        await state.set_state(InfoAdd.waiting_for_title_uz)
         await callback.answer()
     else:
         await callback.message.answer(LANG[lang]["no_permission"])
         await callback.answer()
 
 
-@router.message(InfoAdd.waiting_for_title)
-async def info_add_title(message: types.Message, state: FSMContext):
-    await state.update_data(title=message.text.strip())
+@router.message(InfoAdd.waiting_for_title_uz)
+async def info_add_title_uz(message: types.Message, state: FSMContext):
+    await state.update_data(title_uz=message.text.strip())
     lang = get_language(message.from_user.id) or "uz"
     await message.answer(
-        "Agar bu bo'limga link (URL) biriktirmoqchi bo'lsangiz kiriting. Agar link bo'lmasa 'yoq' deb yozing:" if lang == "uz" else "Если хотите добавить ссылку (URL) к этому разделу, введите её. Если нет, напишите 'нет':")
+        "Yangi bo'lim nomini kiriting (Ruscha):" if lang == "uz" else "Введите название раздела (на русском):")
+    await state.set_state(InfoAdd.waiting_for_title_ru)
+
+
+@router.message(InfoAdd.waiting_for_title_ru)
+async def info_add_title_ru(message: types.Message, state: FSMContext):
+    await state.update_data(title_ru=message.text.strip())
+    lang = get_language(message.from_user.id) or "uz"
+    await message.answer(
+        "Agar bu bo'limga link (URL) biriktirmoqchi bo'lsangiz kiriting. Agar link bo'lmasa 'yoq' deb yozing:" if lang == "uz"
+        else "Если хотите добавить ссылку (URL) к этому разделу, введите её. Если нет, напишите 'нет':")
     await state.set_state(InfoAdd.waiting_for_link)
 
 
@@ -187,7 +198,8 @@ async def info_add_link(message: types.Message, state: FSMContext):
         link = None
     await state.update_data(link=link)
     await message.answer(
-        "Agar bu bo'limning ota bo'limi bo'lsa, ota bo'lim ID sini kiriting. Bo'lmasa '0' deb yozing:" if lang == "uz" else "Если этот раздел имеет родительский раздел, введите его ID. Если нет, введите '0':")
+        "Agar bu bo'limning ota bo'limi bo'lsa, ota bo'lim ID sini kiriting. Bo'lmasa '0' deb yozing:" if lang == "uz"
+        else "Если этот раздел имеет родительский раздел, введите его ID. Если нет, введите '0':")
     await state.set_state(InfoAdd.waiting_for_parent_id)
 
 
@@ -199,24 +211,27 @@ async def info_add_parent_id(message: types.Message, state: FSMContext):
         parent_id = int(parent_id_str)
     except ValueError:
         await message.answer(
-            "Noto'g'ri ID kiritildi, qayta kiriting yoki '0' deb yozing:" if lang == "uz" else "Неверный ID, попробуйте снова или введите '0':")
+            "Noto'g'ri ID kiritildi, qayta kiriting yoki '0' deb yozing:" if lang == "uz"
+            else "Неверный ID, попробуйте снова или введите '0':")
         return
 
     if parent_id == 0:
         parent_id = None
 
     data = await state.get_data()
-    title = data["title"]
+    title_uz = data["title_uz"]
+    title_ru = data["title_ru"]
     link = data["link"]
 
-    add_info_item(title, link, parent_id)
-    await message.answer(LANG[lang]["info_added"].format(title=title))
+    add_info_item(title_uz, title_ru, link, parent_id)
+    await message.answer(LANG[lang]["info_added"].format(title=title_uz))
     await state.clear()
 
 
 class InfoEdit(StatesGroup):
     waiting_for_item_id = State()
-    waiting_for_new_title = State()
+    waiting_for_new_title_uz = State()
+    waiting_for_new_title_ru = State()
     waiting_for_new_link = State()
 
 
@@ -232,10 +247,11 @@ async def info_edit(callback: CallbackQuery, state: FSMContext):
             return
         text = "Tahrirlash uchun ID ni tanlang:\n" if lang == "uz" else "Выберите ID для редактирования:\n"
         for item in all_items:
-            text += f"ID: {item[0]} | Title: {item[2]} | Link: {item[3]}\n"
+            text += f"ID: {item[0]} | Uz: {item[2]} | Ru: {item[3]}\n"
         await callback.message.answer(text)
         await callback.message.answer(
-            "Tahrir qilmoqchi bo'lgan bo'limning ID sini kiriting:" if lang == "uz" else "Введите ID раздела, который хотите отредактировать:")
+            "Tahrir qilmoqchi bo'lgan bo'limning ID sini kiriting:" if lang == "uz"
+            else "Введите ID раздела, который хотите отредактировать:")
         await state.set_state(InfoEdit.waiting_for_item_id)
         await callback.answer()
     else:
@@ -254,23 +270,39 @@ async def info_edit_item_id(message: types.Message, state: FSMContext):
     item = get_info_item(item_id)
     if not item:
         await message.answer(
-            "Bunday ID mavjud emas. Qayta kiriting:" if lang == "uz" else "Такого ID не существует, попробуйте снова:")
+            "Bunday ID mavjud emas. Qayta kiriting:" if lang == "uz"
+            else "Такого ID не существует, попробуйте снова:")
         return
     await state.update_data(item_id=item_id)
     await message.answer(
-        "Yangi nomni kiriting (o'zgartirmoqchi bo'lmasangiz 'yoq' deb yozing):" if lang == "uz" else "Введите новое название (если не хотите менять, введите 'нет'):")
-    await state.set_state(InfoEdit.waiting_for_new_title)
+        "Yangi nomni kiriting (O'zbekcha) (o'zgartirmoqchi bo'lmasangiz 'yoq' deb yozing):" if lang == "uz"
+        else "Введите новое название (на узбекском) (если не хотите менять, введите 'нет'):")
+    await state.set_state(InfoEdit.waiting_for_new_title_uz)
 
 
-@router.message(InfoEdit.waiting_for_new_title)
-async def info_edit_new_title(message: types.Message, state: FSMContext):
-    new_title = message.text.strip()
+@router.message(InfoEdit.waiting_for_new_title_uz)
+async def info_edit_new_title_uz(message: types.Message, state: FSMContext):
+    new_title_uz = message.text.strip()
     lang = get_language(message.from_user.id) or "uz"
-    if new_title.lower() in ["yoq", "нет"]:
-        new_title = None
-    await state.update_data(new_title=new_title)
+    if new_title_uz.lower() in ["yoq", "нет"]:
+        new_title_uz = None
+    await state.update_data(new_title_uz=new_title_uz)
     await message.answer(
-        "Yangi linkni kiriting (o'zgartirmoqchi bo'lmasangiz 'yoq' deb yozing):" if lang == "uz" else "Введите новую ссылку (если не хотите менять, введите 'нет'):")
+        "Yangi nomni kiriting (Ruscha) (o'zgartirmoqchi bo'lmasangiz 'yoq' deb yozing):" if lang == "uz"
+        else "Введите новое название (на русском) (если не хотите менять, введите 'нет'):")
+    await state.set_state(InfoEdit.waiting_for_new_title_ru)
+
+
+@router.message(InfoEdit.waiting_for_new_title_ru)
+async def info_edit_new_title_ru(message: types.Message, state: FSMContext):
+    new_title_ru = message.text.strip()
+    lang = get_language(message.from_user.id) or "uz"
+    if new_title_ru.lower() in ["yoq", "нет"]:
+        new_title_ru = None
+    await state.update_data(new_title_ru=new_title_ru)
+    await message.answer(
+        "Yangi linkni kiriting (o'zgartirmoqchi bo'lmasangiz 'yoq' deb yozing):" if lang == "uz"
+        else "Введите новую ссылку (если не хотите менять, введите 'нет'):")
     await state.set_state(InfoEdit.waiting_for_new_link)
 
 
@@ -282,8 +314,9 @@ async def info_edit_new_link(message: types.Message, state: FSMContext):
         new_link = None
     data = await state.get_data()
     item_id = data["item_id"]
-    new_title = data["new_title"]
-    update_info_item(item_id, new_title, new_link)
+    new_title_uz = data.get("new_title_uz")
+    new_title_ru = data.get("new_title_ru")
+    update_info_item(item_id, new_title_uz, new_title_ru, new_link)
     await message.answer(LANG[lang]["info_updated"])
     await state.clear()
 
@@ -304,7 +337,7 @@ async def info_delete(callback: CallbackQuery, state: FSMContext):
             return
         text = "O'chirish uchun ID ni tanlang:\n" if lang == "uz" else "Выберите ID для удаления:\n"
         for item in all_items:
-            text += f"ID: {item[0]} | Title: {item[2]} | Link: {item[3]}\n"
+            text += f"ID: {item[0]} | Uz: {item[2]} | Ru: {item[3]}\n"
         await callback.message.answer(text)
         await callback.message.answer(
             "O'chirmoqchi bo'lgan bo'limning ID sini kiriting:" if lang == "uz" else "Введите ID раздела, который хотите удалить:")
@@ -343,7 +376,8 @@ async def info_view_admin(callback: CallbackQuery):
         else:
             text = "Hozirgi bo'limlar:\n" if lang == "uz" else "Текущие разделы:\n"
             for item in all_items:
-                text += f"ID: {item[0]}, Parent: {item[1]}, Title: {item[2]}, Link: {item[3]}\n"
+                title = item[2] if lang == "uz" else item[3]
+                text += f"ID: {item[0]}, Parent: {item[1]}, Title: {title}, Link: {item[4]}\n"
             await callback.message.answer(text)
         await callback.answer()
     else:

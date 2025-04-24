@@ -1,8 +1,8 @@
 LANG = {
     "uz": {
-        "start_message": "TUIT Telegram botiga xush kelibsiz!",
+        "start_message": "TATU universitetining AKT sohasida iqtisodiyot va menejment fakulteti Telegram botiga xush kelibsiz!",
         "admin_welcome": "Admin panelga xush kelibsiz!",
-        "select_language": "Iltimos, tilni tanlang:",
+        "select_language": "Iltimos, tilni tanlang:\n\nПожалуйста, выберите язык:",
         "language_changed": "Til muvaffaqiyatli o'zgartirildi!",
         "main_menu": {
             "info": "📜 Ma'lumotlar",
@@ -37,12 +37,12 @@ LANG = {
         "info_updated": "✅ Ma'lumot muvaffaqiyatli tahrirlandi.",
         "info_deleted": "✅ Bo'lim o'chirildi.",
         "open_link": "Havolani ochish",
-        "new_request_notification": "Yangi ariza:\n\nIsm: {full_name}\nGuruh: {group_number}\nAriza: {request_text}"
+        "new_request_notification": "Yangi ariza:\nBu arizaga javob yozish uchun arizalarni ko'rish tugmasini bosing:\n\nIsm: {full_name}\nGuruh: {group_number}\nAriza: {request_text}"
     },
     "ru": {
-        "start_message": "Добро пожаловать в бот ТUIT!",
+        "start_message": "Добро пожаловать в Telegram бот факультета Экономика и менеджмент в сфере ИКТ Университета ТАТУ!",
         "admin_welcome": "Добро пожаловать в панель администратора!",
-        "select_language": "Пожалуйста, выберите язык:",
+        "select_language": "Iltimos, tilni tanlang:\n\nПожалуйста, выберите язык:",
         "language_changed": "Язык успешно изменен!",
         "main_menu": {
             "info": "📜 Информация",
@@ -77,6 +77,6 @@ LANG = {
         "info_updated": "✅ Информация успешно отредактирована.",
         "info_deleted": "✅ Раздел удален.",
         "open_link": "Открыть ссылку",
-        "new_request_notification": "Новая заявка:\n\nИмя: {full_name}\nГруппа: {group_number}\nЗаявка: {request_text}"
+        "new_request_notification": "Новая заявка:\nЧтобы ответить на это заявление, нажмите кнопку «Просмотр заявок»:\n\nИмя: {full_name}\nГруппа: {group_number}\nЗаявка: {request_text}"
     }
 }
